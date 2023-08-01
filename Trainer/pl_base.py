@@ -39,7 +39,7 @@ class pl_basic(pl.LightningModule):
         create loss instance
         """
         logger.info("create loss instance...")
-        logger.debug(f"loss: {self.trainer_paras.loss}")
+        logger.debug(f"loss: {self.trainer_paras.loss_name}: {self.trainer_paras.loss}")
         if self.trainer_paras.loss_para is None:
             self.loss_fn = self.trainer_paras.loss()
         else:

@@ -25,5 +25,4 @@ class GATParas:
 
     #---->model paras for training
     is_fixed_adj_matrix:bool = True
-    lambda_nll = 0.5
-    lambda_reg = 0.5
+

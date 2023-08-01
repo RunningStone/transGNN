@@ -1,5 +1,5 @@
 from transGNN.Data.paras import ReaderParas
-
+import torch
 class DataReader:
     def __init__(self,reader_paras:ReaderParas):
         self.paras = reader_paras
@@ -11,26 +11,25 @@ class DataReader:
     ############################################################################
     # .  some utils functions for use the model
     ############################################################################
-    def data_preprocessing(self,data_pack:dict):
+    def get_adj_M(self,data_df=None):
         """
         a pre_processing function for create graph etc.
+        in:
+            data_df: pandas.DataFrame, data table with patientID as index in the first column
         """
-        df_data = data_pack["df"]
+        # drop patientID
+        data_df = self.df_data.iloc[:,1:] if data_df is None else data_df
         adj_thresh = self.data_paras.adj_thresh
         #---->preprocessing steps
         #->get adj matrix
-        adj_matrix = WGCNA_py(df_data)
+        adj_matrix = WGCNA_py(data_df)
         #->thresh adj matrix
         adj_M, threshed_M = thresh_adj_matrix(adj_matrix,adj_thresh)
         #->set adj matrix
         self.set_adj_M(threshed_M)
         
     
-    def data_readfiles(self,data_file_loc,r_file_key,
-                            label_file_loc,label_pid,
-                            gene_thresh,with_transpose,
-                            label_name,label_dict
-                            ):
+    def data_readfiles(self):
         """
         a function for read r files as data source
         in:
@@ -48,17 +47,19 @@ class DataReader:
         """
         from transGNN.Data.utils import get_GeneProfileMatrix
         df_data, df_label = get_GeneProfileMatrix(
-                                        data_file_loc=data_file_loc,
-                                        key=r_file_key,
-                                        label_file_loc=label_file_loc,
-                                        p_id=label_pid,
-                                        thresh=gene_thresh,
-                                        with_transpose=with_transpose,
+                                        data_file_loc=self.paras.data_file_loc,
+                                        key=self.paras.r_file_key,
+                                        label_file_loc=self.paras.label_file_loc,
+                                        p_id=self.paras.label_pid,
+                                        thresh=self.paras.gene_thresh,
+                                        with_transpose=self.paras.with_transpose,
                                         )
         self.df_data = df_data
+
+        # df_data include patientID, so drop it
         features_table = torch.Tensor(df_data.iloc[:,1:].to_numpy())
-        labels_str_np = df_label[label_name].to_numpy()
-        labels_str = torch.Tensor([label_dict[labels_str_np[i]] for i in range(labels_str_np.shape[0])])
+        labels_str_np = df_label[self.paras.label_name].to_numpy()
+        labels_str = torch.Tensor([self.paras.label_dict[labels_str_np[i]] for i in range(labels_str_np.shape[0])])
         
         return features_table,labels_str
     

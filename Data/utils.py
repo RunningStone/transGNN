@@ -146,3 +146,8 @@ class tableWorker:
         for k in keys:
             out.append(df[k].values.tolist())
         return out
+
+
+#############################################################################
+#       sample data with the weight of each class
+#############################################################################
