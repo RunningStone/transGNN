@@ -11,7 +11,7 @@ class pl_basic(pl.LightningModule):
                 trainer_paras:Trainer_para,# trainer para
                 model_paras, # model para
                 ):
-        super(pl_basic,self).__init__()
+        super().__init__()
         """
         A basic class for different PL protocols:
         """
@@ -27,6 +27,9 @@ class pl_basic(pl.LightningModule):
 
         #----> create metrics
         self.create_metrics()
+
+        self.validation_step_outputs = []
+        self.training_step_outputs = []
 
     def create_model(self):
         """
@@ -72,10 +75,11 @@ class pl_basic(pl.LightningModule):
         self.train_metrics = self.trainer_paras.metrics_factory.metrics["metrics_template"].clone(prefix = 'train_')
 
     def collect_step_output(self,key,out,dim=None):
+        data = [x[key] for x in out]
         if dim is None:
-            return torch.cat([x[key] for x in out])
+            return torch.cat(data)
         else:
-            return torch.cat([x[key] for x in out],dim=dim)
+            return torch.cat(data,dim=dim)
 
     def build_trainer(self):
         logger.info(f"build trainer for model.")
@@ -151,6 +155,7 @@ class pl_basic(pl.LightningModule):
         out = {"logits":logits,"Y_prob":prob,
                "Y_hat":final,"label":label,
                "loss":loss}
+        self.train_step_outputs.append(out)
         return out
 
     def val_data_preprocess(self,batch):
@@ -172,6 +177,7 @@ class pl_basic(pl.LightningModule):
         out = {"logits":logits,"Y_prob":prob,
                "Y_hat":final,"label":label,
                "loss":loss}
+        self.validation_step_outputs.append(out)
         return out
     
     def log_val_metrics(self,outlist,bar_name:str):
@@ -210,11 +216,13 @@ class pl_basic(pl.LightningModule):
 
         #---->post process
         out = self.train_post_process(logits,label,loss)
+        
         return out
 
-    def training_epoch_end(self, training_step_outputs):
-        self.log_train_metrics(training_step_outputs,
+    def on_train_epoch_end(self, ):
+        self.log_train_metrics(self.training_step_outputs,
             bar_name = self.trainer_paras.metrics_factory.metrics_names[0]+"_train")
+        self.training_step_outputs.clear()  # free memory
 
     def validation_step(self, batch, batch_idx):
         #---->data preprocess
@@ -228,10 +236,13 @@ class pl_basic(pl.LightningModule):
 
         #---->post process
         out = self.val_post_process(logits,label,loss)
+        
         return out
     
     
-    def validation_epoch_end(self, validation_step_outputs):
-        self.log_val_metrics(validation_step_outputs,
+    def on_validation_epoch_end(self,):
+        
+        self.log_val_metrics(self.validation_step_outputs,
             bar_name = self.trainer_paras.metrics_factory.metrics_names[0]+"_val")
 
+        self.validation_step_outputs.clear()  # free memory

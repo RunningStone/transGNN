@@ -9,45 +9,63 @@ from pathlib import Path
 
 def get_GeneProfileMatrix(      
                             data_file_loc,
+                            data_pid,
                             key='brca.rnaseq',
-                            label_file_loc=None,p_id=None,
-                            thresh=1.0,
+                            label_file_loc=None,label_p_id=None,
+                            thresh=None,
                             with_transpose:bool=False,
                             ):
     tw = tableWorker(data_file_loc)
     tw.read_table(key=key)
     # get patient id and drop score lower than thrh = 1.0
     df2 = tw.df
-    # DEBUG:
-    df2 = df2.set_index("Unnamed: 0")
-    logger.debug(f"{df2[:5]}")
-    logger.debug(f"item example: {df2[df2.columns.tolist()[0]]},thresh:{thresh}")
-    for name in df2.columns.tolist():
-        df2 = df2.drop(df2[df2[name]<thresh].index)
+
+    logger.debug("do transpose: {}".format(with_transpose))
     if with_transpose:
         #  transpose to make  [patient x gene]
-        df3 = df2.transpose()
-    else:
-        df3 = df2
-    df3.insert(0,"sample_id",df3.index.to_list())
-    df3=df3.reset_index(drop=True)
+        df2 = df2.transpose()
+    # set data_pid as index
+    df2.index = df2[data_pid]
+    # drop patientID
+    df2 = df2.iloc[:,1:]
 
+    if thresh is not None:
+        logger.debug(f"item with gene exp thresh:{thresh}")
+        # drop score lower than thrh should be removed
+        for name in df2.columns.tolist():
+            df2 = df2.drop(df2[df2[name]<thresh].index)
+    # get patient id
+    # 将当前索引命名为 data_pid
+    df2.index.name = data_pid
+    # 重置索引，此时data_pid变为一列
+    df3 = df2.reset_index()
+    #index 
+    logger.debug("only accept 12 patient id for data")
+    df3["Patient_ID_merge"] = [name[:12] for name in df3[data_pid].to_list()]
+    # drop patient id
+    df3 = df3.drop([data_pid],axis=1)
+    
     if label_file_loc is not None:
-        # add patient id for data
-        df3["PatientID"] = [name[:12] for name in df3["sample_id"].to_list()]
-        # read label file
+
+        logger.debug("read label file")
         tw_dnad = tableWorker(label_file_loc)
         tw_dnad.read_table()
         # add patient id for label
         df_dnad = tw_dnad.df
-        df_dnad["PatientID"] = [name[:12] for name in df_dnad[p_id].to_list()]
+        logger.debug("only accept 12 str as patient id for label")
+        df_dnad["Patient_ID_merge"] = [name[:12] for name in df_dnad[label_p_id].to_list()]
+        # drop patient id
+        df_dnad = df_dnad.drop([label_p_id],axis=1)
         # merge to confirm all have label
-        df_all = pd.merge(df3,df_dnad,on=["PatientID"])
+        df_all = pd.merge(df3,df_dnad,on=["Patient_ID_merge"])
 
         # get data
         print(df_all.columns)
         df_data = df_all.loc[:,df3.columns.to_list()]
-        df_data = df_data.drop(["PatientID"],axis=1)
+        df_data = df_data.rename(columns={"Patient_ID_merge":"sample_id"})
+        # set sample id as index
+        df_data.index = df_data["sample_id"]
+        df_data = df_data.drop(["sample_id"],axis=1)
         # get label
         df_label = df_all.loc[:,df_dnad.columns.to_list()]
     else:

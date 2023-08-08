@@ -18,11 +18,14 @@ class DataReader:
             data_df: pandas.DataFrame, data table with patientID as index in the first column
         """
         # drop patientID
-        data_df = self.df_data.iloc[:,1:] if data_df is None else data_df
-        adj_thresh = self.data_paras.adj_thresh
+        df = self.df_data if data_df is None else data_df
+        # 重置索引，此时pID变为一列
+        #df_reset = df.reset_index()
+        df_reset = df
+        adj_thresh = self.paras.adj_thresh
         #---->preprocessing steps
         #->get adj matrix
-        adj_matrix = WGCNA_py(data_df)
+        adj_matrix = WGCNA_py(df_reset)
         #->thresh adj matrix
         adj_M, threshed_M = thresh_adj_matrix(adj_matrix,adj_thresh)
         #->set adj matrix
@@ -47,10 +50,14 @@ class DataReader:
         """
         from transGNN.Data.utils import get_GeneProfileMatrix
         df_data, df_label = get_GeneProfileMatrix(
+                                        #---> data
                                         data_file_loc=self.paras.data_file_loc,
+                                        data_pid=self.paras.data_pid,
                                         key=self.paras.r_file_key,
+                                        #---> label
                                         label_file_loc=self.paras.label_file_loc,
-                                        p_id=self.paras.label_pid,
+                                        label_p_id=self.paras.label_pid,
+                                        #---> preprocess
                                         thresh=self.paras.gene_thresh,
                                         with_transpose=self.paras.with_transpose,
                                         )

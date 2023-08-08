@@ -15,7 +15,7 @@ def create_dataset(
     """
     reader = DataReader(dataset_para) 
     features_table, labels_str = reader.data_readfiles()
-    reader.data_preprocessing() # get adj matrix
+    reader.get_adj_M() # get adj matrix
 
     full_dataset = TensorDataset(features_table, labels_str)
 

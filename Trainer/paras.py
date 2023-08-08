@@ -84,7 +84,7 @@ class Trainer_para:
             self.opt_instances.append(partial_opt)
         # partial init schs
         logger.debug(f"schs: {self.schedulers} with paras: {self.scheduler_paras}")
-        if self.schedulers is not None or len(self.schedulers) >0:
+        if self.schedulers is not None and len(self.schedulers) >0:
             assert len(self.schedulers) == len(self.optimizers)
             for sch,sch_para in zip(self.schedulers,self.scheduler_paras):
                 partial_sch = partial(sch, **sch_para)

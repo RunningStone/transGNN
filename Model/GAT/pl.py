@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 
 #import torchsnooper
-from histocore.DATA.Database.utils import get_pyg_graph_data
+
 #---->
 from transGNN import logger
 from transGNN.Trainer.pl_base import pl_basic
@@ -22,19 +22,30 @@ class pl_GAT(pl_basic):
     def __init__(self,
                 trainer_paras:Trainer_para, # trainer para
                 model_paras:GATParas) -> None:
-        super().__init__(self,trainer_paras=trainer_paras,model_paras=model_paras)
+        pl_basic.__init__(self,trainer_paras=trainer_paras,model_paras=model_paras)
 
         self.M  = None
-        self.lambda_nll = self.model_paras.lambda_nll
-        self.lambda_reg = self.model_paras.lambda_reg
+        self.lambda_nll = self.trainer_paras.loss_para["lambda_nll"]
+        self.lambda_reg = self.trainer_paras.loss_para["lambda_reg"]
 
         self.loss_name = self.trainer_paras.loss_name
         
 
+    def create_model(self):
+        """
+        create model instance
+        """
+        from transGNN.Model.GAT.model import GAT
+        self.model = GAT(self.model_paras)
+
     def set_adj_M(self,M):
         # set adjacent matrix
+        if type(M) == pd.DataFrame:
+            # to numpy
+            M = M.to_numpy()
         self.M = M#torch.from_numpy(M)
         #self.M.requires_grad = False
+
         
     def get_graph_data(self,M,feature,label):
         """
@@ -45,9 +56,9 @@ class pl_GAT(pl_basic):
 
     def special_loss(self,pred,label,surv_batch_labels=None, censor_batch_labels=None,):
         if self.loss_name == "CrossEntropyLoss_with_reg": 
-            L=self.loss(self.model,pred,label,)
+            L=self.loss_fn(self.model,pred,label,)
         elif self.loss_name == "MixedCox_CE_with_reg":
-            L=self.loss(self.model,pred,label,surv_batch_labels, censor_batch_labels)
+            L=self.loss_fn(self.model,pred,label,surv_batch_labels, censor_batch_labels)
         else:
             raise ValueError(f" target loss function {self.loss_name} not fit the model.")
         return L 
@@ -69,8 +80,9 @@ class pl_GAT(pl_basic):
         #---->loss
         loss = self.special_loss(results_dict['logits'],y)
 
-        #---->overall counts log 
-        return {'loss': loss} 
+        results_dict.update({'loss' : loss})
+        self.train_step_outputs.append(results_dict)
+        return results_dict
 
 
     def validation_step(self, batch, batch_idx):
@@ -87,6 +99,7 @@ class pl_GAT(pl_basic):
         results_dict = self.model(pyg_data)
 
         results_dict.update({'label' : label})
+        self.validation_step_outputs.append(results_dict)
         return results_dict
 
 
