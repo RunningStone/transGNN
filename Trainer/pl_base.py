@@ -244,5 +244,5 @@ class pl_basic(pl.LightningModule):
         
         self.log_val_metrics(self.validation_step_outputs,
             bar_name = self.trainer_paras.metrics_factory.metrics_names[0]+"_val")
-
+        
         self.validation_step_outputs.clear()  # free memory

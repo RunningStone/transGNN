@@ -44,7 +44,7 @@ class MixedCoxLossWithReg(nn.Module):
         self.lambda_reg = lambda_reg
         self.ce_loss = nn.CrossEntropyLoss()
 
-    def forward(self, preds, model,grad_batch_labels, surv_batch_labels, censor_batch_labels, ):
+    def forward(self,model, preds, grad_batch_labels, surv_batch_labels, censor_batch_labels, ):
         loss_cox = self.cox_loss(surv_batch_labels, censor_batch_labels, preds)
         loss_reg = self.reg_loss(model)
         grad_loss = self.ce_loss(preds, grad_batch_labels)
@@ -59,7 +59,7 @@ class CELossWithReg(nn.Module):
         self.lambda_reg = lambda_reg
         self.ce_loss = nn.CrossEntropyLoss()
 
-    def forward(self, pred,model, label):
+    def forward(self,model, pred, label):
         loss_reg = self.reg_loss(model)
         loss_grad = self.ce_loss(pred, label)
         loss = self.lambda_nll * loss_grad + self.lambda_reg * loss_reg

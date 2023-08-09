@@ -80,8 +80,8 @@ class pl_GAT(pl_basic):
         #---->loss
         loss = self.special_loss(results_dict['logits'],y)
 
-        results_dict.update({'loss' : loss})
-        self.train_step_outputs.append(results_dict)
+        results_dict.update({'loss' : loss,'label' : y})
+        self.training_step_outputs.append(results_dict)
         return results_dict
 
 
