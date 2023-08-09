@@ -9,8 +9,8 @@ gat_model_trainer_para.task_type = "classification"
 gat_model_trainer_para.loss_name = "CrossEntropyLoss_with_reg" # "CrossEntropyLoss_with_reg" # "MixedCox_CE_with_reg"
 gat_model_trainer_para.loss = CELossWithReg # not create instance MixedCoxLossWithReg
 gat_model_trainer_para.loss_para = {
-                                    "lambda_nll":0.5,
-                                    "lambda_reg":0.5,
+                                    "lambda_nll":1,
+                                    "lambda_reg":3e-4,
                                     #"lambda_cox":0.5,
                                     }
 

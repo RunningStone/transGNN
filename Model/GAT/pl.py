@@ -57,6 +57,8 @@ class pl_GAT(pl_basic):
     def special_loss(self,pred,label,surv_batch_labels=None, censor_batch_labels=None,):
         if self.loss_name == "CrossEntropyLoss_with_reg": 
             L=self.loss_fn(self.model,pred,label,)
+                                                #lambda_nll=self.lambda_nll,
+                                                # lambda_reg=self.lambda_reg)
         elif self.loss_name == "MixedCox_CE_with_reg":
             L=self.loss_fn(self.model,pred,label,surv_batch_labels, censor_batch_labels)
         else:
@@ -79,7 +81,7 @@ class pl_GAT(pl_basic):
 
         #---->loss
         loss = self.special_loss(results_dict['logits'],y)
-
+        self.log('loss' , loss)
         results_dict.update({'loss' : loss,'label' : y})
         self.training_step_outputs.append(results_dict)
         return results_dict
